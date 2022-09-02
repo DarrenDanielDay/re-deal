@@ -1,0 +1,38 @@
+{
+  "name": "re-deal",
+  "version": "1.0.0",
+  "description": "A extremely lightweight state management library.",
+  "main": "index.mjs",
+  "scripts": {
+    "build": "ts-esmbuilder",
+    "bundle": "esbuild index.mts --format=esm --bundle --external:react --loader:.mts=ts --minify --outfile=bundle.js && terser bundle.js -c -o bundle.terser.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/DarrenDanielDay/re-dispach.git"
+  },
+  "keywords": [
+    "state",
+    "state management",
+    "store"
+  ],
+  "author": {
+    "email": "Darren_Daniel_Day@hotmail.com",
+    "name": "DarrenDanielDay"
+  },
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/DarrenDanielDay/re-dispach/issues"
+  },
+  "homepage": "https://github.com/DarrenDanielDay/re-dispach#readme",
+  "peerDependencies": {
+    "@types/react": ">=18",
+    "react": ">=18.2",
+    "typescript": ">=4.7"
+  },
+  "devDependencies": {
+    "esbuild": "^0.15.7",
+    "terser": "^5.15.0",
+    "ts-esmbuilder": "^0.1.4"
+  }
+}
