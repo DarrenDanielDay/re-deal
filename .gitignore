@@ -1,6 +1,8 @@
 node_modules
 package-lock.json
 *.js
+*.d.ts
+*.d.ts.map
 *.mjs
 *.d.mts
 *.d.mts.map

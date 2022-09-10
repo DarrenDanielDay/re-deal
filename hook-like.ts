@@ -1,4 +1,4 @@
-import { type Initializer, type NextStore, type ObjectLike, type Revoker, store } from "./core.mjs";
+import { type Initializer, type NextStore, type ObjectLike, type Revoker, store, Store } from "./core";
 
 type Comparator<T> = (a: T, b: T) => boolean;
 type Selector<T, R> = (store: T) => R;
@@ -16,31 +16,16 @@ export const setComparator = (newComparator: Comparator<unknown>) => {
   comparator = newComparator;
 };
 
-type Scheduler = (callback: () => void) => void;
-const globalObject = globalThis;
-/**
- * Scheduler function for batching.
- */
-export let scheduler: Scheduler =
-  globalObject.requestIdleCallback || globalObject.requestAnimationFrame || globalObject.setTimeout;
-
-/**
- * Configure the scheduler.
- * @param newScheduler
- */
-export const setScheduler = (newScheduler: Scheduler) => {
-  scheduler = newScheduler;
-};
-
 export interface StoreHooks<T extends ObjectLike> {
+  store: Store<T>;
   /**
    * Returns the complete stored value.
    */
-  useStore: (this: void) => T;
+  useRead: (this: void) => T;
   /**
    * Returns a dispatcher function that schedules updates.
    */
-  useDispatch: (this: void) => (this: void, nextStore: NextStore<T>) => void;
+  useDispatch: (this: void) => (this: void, nextStore: NextStore<T>) => {};
   /**
    * Map current store with given selector and return it.
    * When the whole store gets changed, components depending on this hook will be notified to update
@@ -60,28 +45,14 @@ export const createHooks = <T extends ObjectLike>(
   connector: <R>(subscribe: (subscriber: (latest: R) => void) => Revoker, fetch: () => R) => R
 ): StoreHooks<T> => {
   const internalStore = store(init);
-  const useStore = () => connector(internalStore.subscribe, internalStore.fetch);
-  let shouldCommit = 0;
-  const dispatch = (nextState: NextStore<T>) => {
-    internalStore.add(nextState);
-    // Automatic batching
-    if (!shouldCommit) {
-      shouldCommit = 1;
-      scheduler(() => {
-        if (shouldCommit) {
-          shouldCommit = 0;
-          internalStore.commit();
-          internalStore.push();
-        }
-      });
-    }
-  };
+  const { fetch, dispatch, subscribe } = internalStore;
+  const useRead = () => connector(subscribe, fetch);
   const useDispatch = () => dispatch;
   const useSelector = <R extends unknown>(selector: Selector<T, R>, compare: Comparator<R> = comparator): R => {
-    const getSnapshot = () => selector(internalStore.fetch());
+    const getSnapshot = () => selector(fetch());
     return connector((onStoreChange) => {
       const previous = getSnapshot();
-      return internalStore.subscribe((latest) => {
+      return subscribe((latest) => {
         const selected = selector(latest);
         if (!compare(selected, previous)) {
           onStoreChange(selected);
@@ -89,10 +60,10 @@ export const createHooks = <T extends ObjectLike>(
       });
     }, getSnapshot);
   };
-  const createdStore = {
-    useStore,
+  return {
+    store: internalStore,
+    useRead,
     useDispatch,
     useSelector,
   };
-  return createdStore;
 };

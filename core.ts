@@ -84,13 +84,30 @@ export type Store<T extends ObjectLike> = {
    */
   add(this: void, nextStore: NextStore<T>): T;
   /**
-   * Commit changes to store.
+   * Reset store changes to last commit.
    */
-  commit(this: void): void;
+  reset(this: void): T;
+  /**
+   * Commit changes to store.
+   * @param message commit message
+   * @returns a unique object for querying history
+   */
+  commit(this: void, message?: string): {};
+  /**
+   * Query commit history.
+   * @param historyKey a history key returned by commit.
+   */
+  query(this: void, historyKey: {}): CommitHistory<T> | undefined;
   /**
    * Push change to subscribers.
    */
   push(this: void): void;
+  /**
+   * Add, commit and push.
+   * @param nextStore next state or reducer
+   * @param message commit message
+   */
+  dispatch(this: void, nextStore: NextStore<T>, message?: string): {};
   /**
    * Add subscriber of push action.
    * @param subscriber subscribe function
@@ -98,13 +115,37 @@ export type Store<T extends ObjectLike> = {
   subscribe(this: void, subscriber: Subscriber<T>): Revoker;
 };
 
+/**
+ * This structure should not be extended.
+ * So it's a `type`, not `interface`.
+ */
+export type CommitHistory<T> = {
+  time: Date;
+  data: T;
+  message: string | undefined;
+};
+
 export const store = <T extends ObjectLike>(init: Initializer<T>) => {
   let state: T = typeof init === "function" ? init() : init;
   const fetch = () => state;
   let staged: T = state;
   const add = (nextState: NextStore<T>) => (staged = typeof nextState === "function" ? nextState(staged) : nextState);
-  const commit = () => {
+  const reset = () => {
+    let outdated = staged;
+    staged = state;
+    return outdated;
+  };
+  const history = new WeakMap<{}, CommitHistory<T>>();
+  const query = (historyKey: {}) => history.get(historyKey);
+  const commit = (message?: string) => {
     state = staged;
+    const historyKey = {};
+    history.set(historyKey, {
+      data: state,
+      time: new Date(),
+      message,
+    });
+    return historyKey;
   };
   const push = () => {
     for (const subscriber of subscribers) {
@@ -115,13 +156,22 @@ export const store = <T extends ObjectLike>(init: Initializer<T>) => {
       }
     }
   };
+  const dispatch = (nextState: NextStore<T>, message?: string) => {
+    add(nextState);
+    const historyKey = commit(message);
+    push();
+    return historyKey;
+  };
   const subscribers = queue<Subscriber<T>>();
   const subscribe = (subscriber: Subscriber<T>) => subscribers.a(subscriber);
   const storeObject: Store<T> = {
     fetch,
     add,
+    reset,
     commit,
+    query,
     push,
+    dispatch,
     subscribe,
   };
   return storeObject;

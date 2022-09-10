@@ -1,11 +1,13 @@
 {
   "name": "re-deal",
   "version": "1.0.0",
-  "description": "A extremely lightweight state management library.",
-  "main": "index.mjs",
+  "description": "An extremely lightweight state management library.",
+  "type": "module",
+  "main": "index.js",
   "scripts": {
     "build": "ts-esmbuilder",
-    "bundle": "esbuild index.mts --format=esm --bundle --external:react --loader:.mts=ts --minify --outfile=bundle.js && terser bundle.js -c -o bundle.terser.js"
+    "bundle:angular": "esbuild observable-like.ts --format=esm --bundle --external:rxjs --loader:.mts=ts --minify --outfile=observable-like-bundle.js && terser observable-like-bundle.js -c -o observable.terser.js",
+    "bundle:react": "esbuild react.ts --format=esm --bundle --external:react --loader:.mts=ts --minify --outfile=react-bundle.js && terser react-bundle.js -c -o react.terser.js"
   },
   "repository": {
     "type": "git",
@@ -28,6 +30,7 @@
   "peerDependencies": {
     "@types/react": ">=18",
     "react": ">=18.2",
+    "rxjs": ">=7",
     "typescript": ">=4.7"
   },
   "devDependencies": {
